@@ -1,0 +1,76 @@
+version: '3.4'
+
+services:
+ 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+  
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      #KAFKA_ADVERTISED_PORT: "29092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  loggerservice:
+    image: ${DOCKER_REGISTRY-}loggerservice
+    build:
+      context: .
+      dockerfile: LoggerService/Dockerfile
+    ports:
+      - "5100:80"
+
+
+  coinsservice:
+    image: ${DOCKER_REGISTRY-}coinsservice
+    build:
+      context: .
+      dockerfile: CoinsService/Dockerfile
+    ports:
+      - "5001:80"
+ 
+
+  userordersservice:
+    image: ${DOCKER_REGISTRY-}userordersservice
+
+    build:
+      context: .
+      dockerfile: UserOrdersService/Dockerfile
+    ports:
+      - "5010:80"
+
+  ordermatchingengine:
+    image: ${DOCKER_REGISTRY-}ordermatchingengine
+    build:
+      context: .
+      dockerfile: OrderMatchingEngine/Dockerfile
+    environment:
+      - CoinsServiceUrl=http://coinsservice
+
+
+  matchedordersprocessmanager:
+    image: ${DOCKER_REGISTRY-}matchedordersprocessmanager
+    build:
+      context: .
+      dockerfile: MatchedOrdersProcessManager/Dockerfile
+
+
+  userbalanceservice:
+    image: ${DOCKER_REGISTRY-}userbalanceservice
+    build:
+      context: .
+      dockerfile: UserBalanceService/Dockerfile
+
